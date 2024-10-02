@@ -6,14 +6,19 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hyf.mianshiya.common.ErrorCode;
 import com.hyf.mianshiya.constant.CommonConstant;
+import com.hyf.mianshiya.exception.BusinessException;
 import com.hyf.mianshiya.exception.ThrowUtils;
 import com.hyf.mianshiya.mapper.QuestionBankQuestionMapper;
 import com.hyf.mianshiya.model.dto.questionBankQuestion.QuestionBankQuestionQueryRequest;
+import com.hyf.mianshiya.model.entity.Question;
+import com.hyf.mianshiya.model.entity.QuestionBank;
 import com.hyf.mianshiya.model.entity.QuestionBankQuestion;
 import com.hyf.mianshiya.model.entity.User;
 import com.hyf.mianshiya.model.vo.QuestionBankQuestionVO;
 import com.hyf.mianshiya.model.vo.UserVO;
 import com.hyf.mianshiya.service.QuestionBankQuestionService;
+import com.hyf.mianshiya.service.QuestionBankService;
+import com.hyf.mianshiya.service.QuestionService;
 import com.hyf.mianshiya.service.UserService;
 import com.hyf.mianshiya.utils.SqlUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +44,12 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
     @Resource
     private UserService userService;
 
+    @Resource
+    private QuestionBankService questionBankService;
+
+    @Resource
+    private QuestionService questionService;
+
     /**
      * 校验数据
      *
@@ -48,6 +59,18 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
     @Override
     public void validQuestionBankQuestion(QuestionBankQuestion questionBankQuestion, boolean add) {
         ThrowUtils.throwIf(questionBankQuestion == null, ErrorCode.PARAMS_ERROR);
+        Long questionId = questionBankQuestion.getQuestionId();
+        Long questionBankId = questionBankQuestion.getQuestionBankId();
+        if (questionId == null || questionBankId == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "题库或题目id不能为空");
+        }
+
+        // 判断是否存在
+        Question question = questionService.getById(questionId);
+        ThrowUtils.throwIf(question == null, ErrorCode.NOT_FOUND_ERROR, "题目不存在");
+
+        QuestionBank questionBank = questionBankService.getById(questionBankId);
+        ThrowUtils.throwIf(questionBank == null, ErrorCode.NOT_FOUND_ERROR, "题库不存在");
     }
 
     /**

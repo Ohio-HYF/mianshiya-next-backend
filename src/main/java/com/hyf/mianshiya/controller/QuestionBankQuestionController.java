@@ -1,5 +1,7 @@
 package com.hyf.mianshiya.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hyf.mianshiya.annotation.AuthCheck;
 import com.hyf.mianshiya.common.BaseResponse;
@@ -9,10 +11,7 @@ import com.hyf.mianshiya.common.ResultUtils;
 import com.hyf.mianshiya.constant.UserConstant;
 import com.hyf.mianshiya.exception.BusinessException;
 import com.hyf.mianshiya.exception.ThrowUtils;
-import com.hyf.mianshiya.model.dto.questionBankQuestion.QuestionBankQuestionAddRequest;
-import com.hyf.mianshiya.model.dto.questionBankQuestion.QuestionBankQuestionEditRequest;
-import com.hyf.mianshiya.model.dto.questionBankQuestion.QuestionBankQuestionQueryRequest;
-import com.hyf.mianshiya.model.dto.questionBankQuestion.QuestionBankQuestionUpdateRequest;
+import com.hyf.mianshiya.model.dto.questionBankQuestion.*;
 import com.hyf.mianshiya.model.entity.QuestionBankQuestion;
 import com.hyf.mianshiya.model.entity.User;
 import com.hyf.mianshiya.model.vo.QuestionBankQuestionVO;
@@ -44,7 +43,7 @@ public class QuestionBankQuestionController {
     // region 增删改查
 
     /**
-     * 创建题库题目关联
+     * 创建题库题目关联（仅管理员）
      *
      * @param questionBankQuestionAddRequest
      * @param request
@@ -165,7 +164,7 @@ public class QuestionBankQuestionController {
      */
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<QuestionBankQuestionVO>> listQuestionBankQuestionVOByPage(@RequestBody QuestionBankQuestionQueryRequest questionBankQuestionQueryRequest,
-                                                               HttpServletRequest request) {
+                                                                                       HttpServletRequest request) {
         long current = questionBankQuestionQueryRequest.getCurrent();
         long size = questionBankQuestionQueryRequest.getPageSize();
         // 限制爬虫
@@ -186,7 +185,7 @@ public class QuestionBankQuestionController {
      */
     @PostMapping("/my/list/page/vo")
     public BaseResponse<Page<QuestionBankQuestionVO>> listMyQuestionBankQuestionVOByPage(@RequestBody QuestionBankQuestionQueryRequest questionBankQuestionQueryRequest,
-                                                                 HttpServletRequest request) {
+                                                                                         HttpServletRequest request) {
         ThrowUtils.throwIf(questionBankQuestionQueryRequest == null, ErrorCode.PARAMS_ERROR);
         // 补充查询条件，只查询当前登录用户的数据
         User loginUser = userService.getLoginUser(request);
@@ -234,5 +233,30 @@ public class QuestionBankQuestionController {
         return ResultUtils.success(true);
     }
 
+
+    /**
+     * 移除题库题目关联
+     *
+     * @param questionBankQuestionRemoveRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/remove")
+    public BaseResponse<Boolean> removeQuestionBankQuestion(@RequestBody QuestionBankQuestionRemoveRequest questionBankQuestionRemoveRequest, HttpServletRequest request) {
+        if (questionBankQuestionRemoveRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        QuestionBankQuestion questionBankQuestion = new QuestionBankQuestion();
+        BeanUtils.copyProperties(questionBankQuestionRemoveRequest, questionBankQuestion);
+        questionBankQuestionService.validQuestionBankQuestion(questionBankQuestion, false);
+
+        // 操作数据库
+        LambdaQueryWrapper<QuestionBankQuestion> lambdaQueryWrapper = Wrappers.lambdaQuery(QuestionBankQuestion.class)
+                .eq(QuestionBankQuestion::getQuestionBankId, questionBankQuestion.getQuestionBankId())
+                .eq(QuestionBankQuestion::getQuestionId, questionBankQuestion.getQuestionId());
+        boolean result = questionBankQuestionService.remove(lambdaQueryWrapper);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "数据不存在");
+        return ResultUtils.success(true);
+    }
     // endregion
 }
