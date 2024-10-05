@@ -1,4 +1,4 @@
-package com.hyf.mianshiya.es;
+package com.hyf.mianshiya;
 
 import cn.hutool.core.date.DateUtil;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
